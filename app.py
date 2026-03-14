@@ -1,7 +1,11 @@
 import streamlit as st
 import numpy as np
-from PIL import Image
+import cv2
+import joblib
 from streamlit_drawable_canvas import st_canvas
+
+# Load trained model
+model = joblib.load("digit_model.pkl")
 
 st.title("Handwritten Digit Recognizer")
 
@@ -21,12 +25,22 @@ canvas_result = st_canvas(
 if canvas_result.image_data is not None:
 
     img = canvas_result.image_data
-    img = Image.fromarray((img[:, :, 0]).astype("uint8"))
-    img = img.resize((28, 28))
 
-    img_array = np.array(img)
-    avg = np.mean(img_array)
+    # Convert to grayscale
+    img = cv2.cvtColor(img.astype('uint8'), cv2.COLOR_BGR2GRAY)
 
-    digit = int(avg / 25)
+    # Resize to dataset size
+    img = cv2.resize(img, (8, 8))
 
-    st.subheader(f"Predicted Digit: {digit}")
+    # Invert colors
+    img = cv2.bitwise_not(img)
+
+    # Normalize
+    img = img / 16.0
+
+    # Flatten image
+    img = img.flatten().reshape(1, -1)
+
+    prediction = model.predict(img)
+
+    st.subheader(f"Predicted Digit: {prediction[0]}")
