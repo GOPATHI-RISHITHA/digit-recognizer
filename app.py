@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
-import cv2
 import joblib
+from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
 # Load trained model
@@ -27,20 +27,23 @@ if canvas_result.image_data is not None:
     img = canvas_result.image_data
 
     # Convert to grayscale
-    img = cv2.cvtColor(img.astype('uint8'), cv2.COLOR_BGR2GRAY)
+    img = Image.fromarray(img.astype("uint8")).convert("L")
 
     # Resize to dataset size
-    img = cv2.resize(img, (8, 8))
+    img = img.resize((8, 8))
+
+    # Convert to numpy
+    img_array = np.array(img)
 
     # Invert colors
-    img = cv2.bitwise_not(img)
+    img_array = 255 - img_array
 
     # Normalize
-    img = img / 16.0
+    img_array = img_array / 16.0
 
-    # Flatten image
-    img = img.flatten().reshape(1, -1)
+    # Flatten
+    img_array = img_array.flatten().reshape(1, -1)
 
-    prediction = model.predict(img)
+    prediction = model.predict(img_array)
 
     st.subheader(f"Predicted Digit: {prediction[0]}")
