@@ -1,18 +1,48 @@
-import joblib
-from sklearn.datasets import load_digits
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import datasets, transforms
 
-digits = load_digits()
+# Load MNIST
+transform = transforms.ToTensor()
 
-X = digits.data
-y = digits.target
+train_data = datasets.MNIST(root="./data", train=True, download=True, transform=transform)
+train_loader = torch.utils.data.DataLoader(train_data, batch_size=64, shuffle=True)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+# Simple Neural Network
+class NeuralNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(28*28, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 10)
+        )
 
-model = SVC()
-model.fit(X_train, y_train)
+    def forward(self, x):
+        return self.model(x)
 
-joblib.dump(model, "digit_model.pkl")
+model = NeuralNet()
 
-print("Model created successfully")
+# Loss + Optimizer (BACKPROP happens here)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+# Training
+for epoch in range(5):
+    for images, labels in train_loader:
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        loss.backward()   # 🔥 BACKPROPAGATION
+        optimizer.step()  # 🔥 WEIGHT UPDATE
+
+    print(f"Epoch {epoch+1} done")
+
+# Save model
+torch.save(model.state_dict(), "digit_nn.pth")
+
+print("Model trained with backpropagation!")
